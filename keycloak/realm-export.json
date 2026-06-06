@@ -1,0 +1,235 @@
+{
+  "id": "certmanager-realm",
+  "realm": "certmanager-realm",
+  "displayName": "CertManager",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 3600,
+  "roles": {
+    "realm": [
+      {
+        "name": "ROLE_ADMIN",
+        "description": "Administrator role with full access",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "ROLE_USER",
+        "description": "Standard user role with read access",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "READ",
+        "description": "Permission to read certificates",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "WRITE",
+        "description": "Permission to upload certificates",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "UPDATE",
+        "description": "Permission to update certificates",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "admins",
+      "path": "/admins",
+      "subGroups": []
+    },
+    {
+      "name": "developers",
+      "path": "/developers",
+      "subGroups": []
+    },
+    {
+      "name": "viewers",
+      "path": "/viewers",
+      "subGroups": []
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "certmanager-frontend",
+      "name": "CertManager Frontend",
+      "description": "React SPA frontend client (public, PKCE)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*##http://localhost:5173/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "claim.name": "groups"
+          }
+        },
+        {
+          "name": "permissions-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "permissions",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "realm-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "false",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "certmanager-backend",
+      "name": "CertManager Backend",
+      "description": "Spring Boot backend resource server",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@certmanager.local",
+      "firstName": "Admin",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ROLE_ADMIN",
+        "WRITE",
+        "UPDATE",
+        "READ"
+      ],
+      "groups": [
+        "/admins"
+      ]
+    },
+    {
+      "username": "user1",
+      "email": "user1@certmanager.local",
+      "firstName": "Regular",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "User@1234",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ROLE_USER",
+        "READ"
+      ],
+      "groups": [
+        "/viewers"
+      ]
+    },
+    {
+      "username": "dev1",
+      "email": "dev1@certmanager.local",
+      "firstName": "Developer",
+      "lastName": "One",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Dev@1234",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ROLE_ADMIN",
+        "WRITE",
+        "READ"
+      ],
+      "groups": [
+        "/developers"
+      ]
+    }
+  ],
+  "scopeMappings": [],
+  "clientScopeMappings": {},
+  "defaultDefaultClientScopes": [
+    "web-origins",
+    "acr",
+    "roles",
+    "profile",
+    "email"
+  ],
+  "defaultOptionalClientScopes": [
+    "address",
+    "phone",
+    "offline_access",
+    "microprofile-jwt"
+  ],
+  "internationalizationEnabled": false,
+  "defaultLocale": "en"
+}

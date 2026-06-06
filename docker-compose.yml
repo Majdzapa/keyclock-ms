@@ -1,0 +1,187 @@
+# ═══════════════════════════════════════════════════════════
+# CertManager — Full Stack Docker Compose
+# ═══════════════════════════════════════════════════════════
+#
+# Services grouped:
+#   ┌── infra  ──────────────────────────────────────┐
+#   │  mariadb · keycloak · mailpit                  │
+#   └────────────────────────────────────────────────┘
+#   ┌── app ─────────────────────────────────────────┐
+#   │  backend (Spring Boot) · frontend (React/Nginx)│
+#   └────────────────────────────────────────────────┘
+#
+# Usage:
+#   docker compose up -d                    # start everything
+#   docker compose up -d mariadb keycloak mailpit   # infra only
+#   docker compose --profile app up -d      # app only (needs infra running)
+#   docker compose logs -f backend          # tail backend logs
+#   docker compose down -v                  # stop + remove volumes
+#
+# Requires: .env file (copy from .env.example)
+# ═══════════════════════════════════════════════════════════
+
+version: "3.8"
+
+# ─────────────────────────── Env file ─────────────────────────────────
+# All secrets and tunables live in .env — never commit that file.
+
+networks:
+  certmanager-net:
+    driver: bridge
+    name: certmanager-net
+
+volumes:
+  mariadb-data:
+    name: certmanager-mariadb-data
+  keycloak-data:
+    name: certmanager-keycloak-data
+
+# ═══════════════════════════════════════════════════════════
+# SERVICES
+# ═══════════════════════════════════════════════════════════
+services:
+
+  # ─────────────────────────── MariaDB ──────────────────────────────────
+  mariadb:
+    image: mariadb:11
+    container_name: certmanager-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MARIADB_DATABASE:      ${DB_NAME:-certmanager}
+      MARIADB_USER:          ${DB_USER:-certuser}
+      MARIADB_PASSWORD:      ${DB_PASSWORD:-certpassword}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    networks:
+      - certmanager-net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─────────────────────────── Keycloak ─────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: certmanager-keycloak
+    restart: unless-stopped
+    command:
+      - start-dev
+      - --import-realm
+    environment:
+      KEYCLOAK_ADMIN:           ${KC_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD:  ${KC_ADMIN_PASSWORD:-admin}
+      KC_HTTP_PORT:             8080
+      KC_HOSTNAME_STRICT:       "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED:          "true"
+      # Point Keycloak DB at MariaDB (optional — uses embedded H2 by default in dev mode)
+      # KC_DB:          mariadb
+      # KC_DB_URL:      jdbc:mariadb://mariadb:3306/${DB_NAME:-certmanager}_kc
+      # KC_DB_USERNAME: ${DB_USER:-certuser}
+      # KC_DB_PASSWORD: ${DB_PASSWORD:-certpassword}
+    ports:
+      - "${KC_PORT:-8080}:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    networks:
+      - certmanager-net
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/realms/${KC_REALM:-certmanager-realm} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
+  # ─────────────────────────── Mailpit ──────────────────────────────────
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: certmanager-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAIL_SMTP_PORT:-1025}:1025"   # SMTP
+      - "${MAIL_UI_PORT:-8025}:8025"     # Web UI
+    networks:
+      - certmanager-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ─────────────────────────── Backend ──────────────────────────────────
+  backend:
+    build:
+      context: ./certmanager
+      dockerfile: Dockerfile
+    image: certmanager-backend:local
+    container_name: certmanager-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # Datasource — override via env if needed
+      SPRING_DATASOURCE_URL:      jdbc:mariadb://mariadb:3306/${DB_NAME:-certmanager}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-certuser}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-certpassword}
+      # Keycloak JWT validation
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/${KC_REALM:-certmanager-realm}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/${KC_REALM:-certmanager-realm}/protocol/openid-connect/certs
+      # Mail
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: 1025
+      # App-level config
+      APP_NOTIFICATION_ENABLED:    ${NOTIFICATION_ENABLED:-true}
+      APP_NOTIFICATION_ADMIN_EMAIL: ${NOTIFICATION_ADMIN_EMAIL:-admin@certmanager.local}
+    ports:
+      - "${BACKEND_PORT:-8081}:8081"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    networks:
+      - certmanager-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  # ─────────────────────────── Frontend ─────────────────────────────────
+  frontend:
+    build:
+      context: ./certmanager-ui
+      dockerfile: Dockerfile
+      args:
+        # These are baked into the static JS bundle at build time
+        VITE_KEYCLOAK_URL:       ${VITE_KEYCLOAK_URL:-http://localhost:8080}
+        VITE_KEYCLOAK_REALM:     ${KC_REALM:-certmanager-realm}
+        VITE_KEYCLOAK_CLIENT_ID: ${VITE_KEYCLOAK_CLIENT_ID:-certmanager-frontend}
+        VITE_API_URL:            ${VITE_API_URL:-http://localhost:8081/api/v1}
+    image: certmanager-frontend:local
+    container_name: certmanager-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - certmanager-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
