@@ -8,9 +8,17 @@ import CertList from './pages/CertList'
 import UploadPage from './pages/UploadPage'
 import FetchPage from './pages/FetchPage'
 
+import CertDetails from './pages/CertDetails'
+
 export default function App() {
   const auth = useAuth()
   const [page, setPage] = useState('list')
+  const [selectedCertId, setSelectedCertId] = useState(null)
+
+  const viewDetails = (id) => {
+    setSelectedCertId(id)
+    setPage('details')
+  }
 
   // Auto-redirect to Keycloak when not authenticated (covers logout too)
   useEffect(() => {
@@ -35,7 +43,8 @@ export default function App() {
       <NavBar page={page} setPage={setPage} username={username} canWrite={canWrite} canRead={canRead} />
 
       <main>
-        {page === 'list'   && (canRead ? <CertList canRead={canRead} /> : <p>You do not have permission to read certificates.</p>)}
+        {page === 'list'   && (canRead ? <CertList canRead={canRead} admin={admin} onView={viewDetails} /> : <p>You do not have permission to read certificates.</p>)}
+        {page === 'details' && (canRead ? <CertDetails id={selectedCertId} onBack={() => setPage('list')} /> : <p>You do not have permission to read details.</p>)}
         {page === 'upload' && (canWrite ? <UploadPage /> : <p>You do not have permission to upload.</p>)}
         {page === 'fetch'  && (canWrite ? <FetchPage /> : <p>You do not have permission to fetch.</p>)}
       </main>

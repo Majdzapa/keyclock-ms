@@ -27,6 +27,7 @@ api.interceptors.request.use(config => {
 
 export const certificateApi = {
   list:         ()          => api.get('/certificates').then(r => r.data),
+  getById:      (id)        => api.get(`/certificates/${id}`).then(r => r.data),
   upload:       (file)      => { const f = new FormData(); f.append('file', file); return api.post('/certificates/upload', f).then(r => r.data) },
   fetchFromUrl: (url, port) => api.post('/certificates/fetch-url', { url, port: String(port) }).then(r => r.data),
   delete:       (id)        => api.delete(`/certificates/${id}`),

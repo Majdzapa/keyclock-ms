@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { certificateApi } from '../api/certificateApi'
 
-export default function CertList({ admin }) {
+export default function CertList({ admin, onView }) {
   const [certs,   setCerts]   = useState([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState('')
@@ -32,7 +32,7 @@ export default function CertList({ admin }) {
           <thead>
             <tr>
               <th>Filename</th><th>Owner</th><th>Expires</th><th>Status</th><th>Group</th>
-              {admin && <th>Actions</th>}
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -47,13 +47,17 @@ export default function CertList({ admin }) {
                    :                   <span className="badge green">Valid</span>}
                 </td>
                 <td>{c.uploadedByGroup ?? '—'}</td>
-                {admin && (
-                  <td>
-                    <a href={certificateApi.downloadUrl(c.id)} download>Download</a>
-                    {' '}
-                    <button onClick={() => handleDelete(c.id, c.filename)}>Delete</button>
-                  </td>
-                )}
+                <td>
+                  <button onClick={() => onView(c.id)}>View</button>
+                  {admin && (
+                    <>
+                      {' '}
+                      <a href={certificateApi.downloadUrl(c.id)} download>Download</a>
+                      {' '}
+                      <button onClick={() => handleDelete(c.id, c.filename)}>Delete</button>
+                    </>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
