@@ -68,7 +68,6 @@ public class CertificateService {
             certificate.setSourceType(SourceTypeEnum.MANUAL_UPLOAD);
 
             Certificate saved = certificateRepository.save(certificate);
-            log.info("Certificate saved with ID: {}", saved.getId());
 
             return certificateMapper.toResponseDto(saved);
 

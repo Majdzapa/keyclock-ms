@@ -1,14 +1,14 @@
 import React from 'react'
 import { keycloakLogout } from '../auth/authConfig'
 
-export default function NavBar({ page, setPage, username, admin, canRead }) {
+export default function NavBar({ page, setPage, username, canWrite, canRead }) {
   return (
     <nav>
       <span className="brand">CertManager</span>
       <div className="nav-links">
         {canRead && <button onClick={() => setPage('list')}   className={page === 'list'   ? 'active' : ''}>Certificates</button>}
-        {admin   && <button onClick={() => setPage('upload')} className={page === 'upload' ? 'active' : ''}>Upload</button>}
-        {admin   && <button onClick={() => setPage('fetch')}  className={page === 'fetch'  ? 'active' : ''}>Fetch URL</button>}
+        {canWrite   && <button onClick={() => setPage('upload')} className={page === 'upload' ? 'active' : ''}>Upload</button>}
+        {canWrite   && <button onClick={() => setPage('fetch')}  className={page === 'fetch'  ? 'active' : ''}>Fetch URL</button>}
       </div>
       <div className="nav-right">
         <span>{username}</span>

@@ -46,7 +46,7 @@ public class CertificateController {
     // ─────────────────────────── Fetch from URL ───────────────────────────
 
     @PostMapping("/fetch-url")
-    @PreAuthorize("hasRole('ADMIN') and (hasAuthority('WRITE') or hasAuthority('UPDATE'))")
+    @PreAuthorize("hasAnyRole('ADMIN','USER') and (hasAuthority('WRITE') or hasAuthority('UPDATE'))")
     public ResponseEntity<CertificateResponseDto> fetchCertificateFromUrl(
             @Valid @RequestBody RemoteUrlRequestDto request,
             Authentication authentication) {
@@ -128,7 +128,7 @@ public class CertificateController {
 //    }
 
     @PostMapping(value = "/upload" ,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasAuthority('WRITE)')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasAuthority('WRITE'))")
     public ResponseEntity<CertificateResponseDto> uploadCertificate(@PathVariable("file") MultipartFile file,Authentication authentication){
         CertificateResponseDto response = certificateService.uploadCertificate(file, authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

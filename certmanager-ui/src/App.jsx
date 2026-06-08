@@ -27,16 +27,17 @@ export default function App() {
   const username = auth.userData.profile?.preferred_username ?? ''
   const { roles, permissions } = parseAccessToken(auth.userData)
   const admin    = roles.includes('ROLE_ADMIN')
-  const canRead  = admin || permissions.includes('READ') || roles.includes('ROLE_USER')
+  const canRead  = admin || permissions.includes('READ')
+  const canWrite =  admin || permissions.includes('WRITE')
 
   return (
     <div className="app">
-      <NavBar page={page} setPage={setPage} username={username} admin={admin} canRead={canRead} />
+      <NavBar page={page} setPage={setPage} username={username} canWrite={canWrite} canRead={canRead} />
 
       <main>
-        {page === 'list'   && (canRead ? <CertList admin={admin} /> : <p>You do not have permission to read certificates.</p>)}
-        {page === 'upload' && (admin ? <UploadPage /> : <p>You do not have permission to upload.</p>)}
-        {page === 'fetch'  && (admin ? <FetchPage /> : <p>You do not have permission to fetch.</p>)}
+        {page === 'list'   && (canRead ? <CertList canRead={canRead} /> : <p>You do not have permission to read certificates.</p>)}
+        {page === 'upload' && (canWrite ? <UploadPage /> : <p>You do not have permission to upload.</p>)}
+        {page === 'fetch'  && (canWrite ? <FetchPage /> : <p>You do not have permission to fetch.</p>)}
       </main>
     </div>
   )
