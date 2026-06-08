@@ -12,9 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-/**
- * Custom JWT converter to map Keycloak realm roles and permission claims into Spring Security authorities.
- */
 @Component
 public class KeycloakJwtConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
@@ -44,11 +41,10 @@ public class KeycloakJwtConverter implements Converter<Jwt, AbstractAuthenticati
 
         // 2. Extract Permissions
         if (jwt.hasClaim(PERMISSIONS)) {
-            List<?> permissions = jwt.getClaim(PERMISSIONS);
+            List<String> permissions = jwt.getClaimAsStringList(PERMISSIONS);
             if (permissions != null) {
                 permissions.stream()
                            .filter(Objects::nonNull)
-                           .map(Object::toString)
                            .map(PermissionEnum::fromString)
                            .filter(Objects::nonNull)
                            .map(PermissionEnum::name)

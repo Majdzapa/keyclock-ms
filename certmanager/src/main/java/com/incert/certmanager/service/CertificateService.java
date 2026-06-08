@@ -60,7 +60,7 @@ public class CertificateService {
             byte[] fileBytes = file.getBytes();
             String extension = getFileExtension(Objects.requireNonNull(file.getOriginalFilename()));
 
-            // Parse the certificate to extract all metadata fields
+
             X509Certificate x509 = parseCertificateBytes(fileBytes, extension);
 
             Certificate certificate = buildFromX509(x509, fileBytes, file.getOriginalFilename(),

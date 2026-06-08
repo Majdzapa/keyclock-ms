@@ -39,32 +39,17 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Disable CSRF for stateless API
             .csrf(AbstractHttpConfigurer::disable)
-
-            // Configure CORS
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-            // Stateless sessions
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-            // URL-level authorization
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // CORS preflight
-                
-                // HTTP-level RBAC rules
-                .requestMatchers(HttpMethod.POST, "/api/v1/certificates/upload").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/v1/certificates/fetch-url").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/v1/certificates/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/v1/certificates/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/v1/certificates/**").hasAnyRole("ADMIN", "USER")
-                
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                .requestMatchers("/api/v1/certificates/**").authenticated()
                 .anyRequest().authenticated()
             )
-
-            // Configure OAuth2 Resource Server to validate JWT Bearer tokens
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(keycloakJwtConverter))
             );

@@ -5,15 +5,12 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.proxy.HibernateProxy;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
-/**
- * JPA entity representing a managed SSL/TLS certificate.
- * <p>
- * Stores both the raw certificate bytes (BLOB) and all parsed metadata fields.
- * Uses {@link SourceTypeEnum} to distinguish manual uploads from remote URL fetches.
- */
+
 @Entity
 @Table(
     name = "certificates",
@@ -29,7 +26,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(exclude = "certificateContent")
-@EqualsAndHashCode(of = "id")
 public class Certificate {
 
     @Id
@@ -76,10 +72,6 @@ public class Certificate {
     @Column(columnDefinition = "TEXT")
     private String sans;
 
-    /**
-     * Alias of {@link #validTo} — maintained separately for explicit
-     * expiry queries and scheduler use.
-     */
     @Column(name = "expiration_date")
     private LocalDateTime expirationDate;
 
@@ -104,10 +96,6 @@ public class Certificate {
 
     // ─────────────────────────── Raw Certificate ──────────────────────────
 
-    /**
-     * Raw certificate file bytes.
-     * Stored as LONGBLOB to support binary formats (p12, pfx) up to ~16 MB.
-     */
     @Lob
     @Column(name = "certificate_content", columnDefinition = "LONGBLOB")
     private byte[] certificateContent;
@@ -134,5 +122,21 @@ public class Certificate {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
         this.expirationDate = this.validTo;
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        Certificate that = (Certificate) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
     }
 }

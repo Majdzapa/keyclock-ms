@@ -30,18 +30,18 @@ public class CertificateController {
 
     private final CertificateService certificateService;
 
-    // ─────────────────────────── Upload ───────────────────────────────────
-
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ADMIN') and (hasAuthority('WRITE') or hasAuthority('UPDATE'))")
-    public ResponseEntity<CertificateResponseDto> uploadCertificate(
-            @RequestParam("file") MultipartFile file,
-            Authentication authentication) {
-
-        log.info("POST /api/v1/certificates/upload — file: {}", file.getOriginalFilename());
-        CertificateResponseDto response = certificateService.uploadCertificate(file, authentication);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
+//    // ─────────────────────────── Upload ───────────────────────────────────
+//
+//    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    @PreAuthorize("hasAnyRole('ADMIN', 'USER') and (hasAuthority('WRITE') or hasAuthority('UPDATE'))")
+//    public ResponseEntity<CertificateResponseDto> uploadCertificate(
+//            @RequestParam("file") MultipartFile file,
+//            Authentication authentication) {
+//
+//        log.info("POST /api/v1/certificates/upload — file: {}", file.getOriginalFilename());
+//        CertificateResponseDto response = certificateService.uploadCertificate(file, authentication);
+//        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+//    }
 
     // ─────────────────────────── Fetch from URL ───────────────────────────
 
@@ -117,4 +117,22 @@ public class CertificateController {
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"certificate-" + id + ".pem\"")
             .body(content);
     }
+
+//    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    @PreAuthorize("hasAnyRole('ADMIN','USER') and (hasAuthority('WRITE') or hasAuthority('UPDATE'))")
+//    public ResponseEntity<CertificateResponseDto> uploadCertificate(@PathVariable("file") MultipartFile file,
+//                                                                    Authentication authentication) {
+//
+//        CertificateResponseDto certificateResponseDto = this.certificateService.uploadCertificate(file, authentication);
+//        return ResponseEntity.status(HttpStatus.CREATED).body(certificateResponseDto);
+//    }
+
+    @PostMapping(value = "/upload" ,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasAuthority('WRITE)')")
+    public ResponseEntity<CertificateResponseDto> uploadCertificate(@PathVariable("file") MultipartFile file,Authentication authentication){
+        CertificateResponseDto response = certificateService.uploadCertificate(file, authentication);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+    }
+
 }

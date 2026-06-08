@@ -27,8 +27,6 @@ public class JwtClaimsExtractor {
                 return group;
             }
         }
-        
-        // Fallback to the first available group
         return GroupEnum.fromPath(groups.getFirst());
     }
 
@@ -47,8 +45,6 @@ public class JwtClaimsExtractor {
         String username = jwt.getClaimAsString(PREFERRED_USERNAME);
         return username != null ? username : jwt.getSubject();
     }
-
-
 
     private Jwt getCurrentJwt() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

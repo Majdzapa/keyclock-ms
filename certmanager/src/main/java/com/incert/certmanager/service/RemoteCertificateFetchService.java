@@ -27,9 +27,6 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Fetches SSL/TLS certificates from remote hosts using pure Java + BouncyCastle.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -79,7 +76,6 @@ public class RemoteCertificateFetchService {
                         throw new CertificateParsingException("No certificates returned from " + host);
                     }
 
-                    // Leaf certificate is always the first in the chain
                     return (X509Certificate) chain[0];
                 }
             }
