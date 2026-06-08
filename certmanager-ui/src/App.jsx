@@ -10,6 +10,8 @@ import FetchPage from './pages/FetchPage'
 
 import CertDetails from './pages/CertDetails'
 
+import SearchPage from './pages/SearchPage'
+
 export default function App() {
   const auth = useAuth()
   const [page, setPage] = useState('list')
@@ -44,6 +46,7 @@ export default function App() {
 
       <main>
         {page === 'list'   && (canRead ? <CertList canRead={canRead} admin={admin} onView={viewDetails} /> : <p>You do not have permission to read certificates.</p>)}
+        {page === 'search' && (canRead ? <SearchPage onView={viewDetails} /> : <p>You do not have permission to search.</p>)}
         {page === 'details' && (canRead ? <CertDetails id={selectedCertId} onBack={() => setPage('list')} /> : <p>You do not have permission to read details.</p>)}
         {page === 'upload' && (canWrite ? <UploadPage /> : <p>You do not have permission to upload.</p>)}
         {page === 'fetch'  && (canWrite ? <FetchPage /> : <p>You do not have permission to fetch.</p>)}
